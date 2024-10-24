@@ -619,6 +619,7 @@ def process_video_full(input_filename, output_path, args, depth_model, side_mode
             fps=fps,
             container_format=args.video_format,
             video_codec=args.video_codec,
+            video_bitrate=args.video_bitrate,
             pix_fmt=args.pix_fmt,
             colorspace=args.colorspace,
             options=make_video_codec_option(args),
@@ -1164,6 +1165,7 @@ def process_config_video(config, args, side_model):
         fps=config.fps,  # use config.fps, ignore args.max_fps
         container_format=args.video_format,
         video_codec=args.video_codec,
+        video_bitrate=args.video_bitrate,
         pix_fmt=args.pix_fmt,
         colorspace=args.colorspace,
         options=make_video_codec_option(args),
@@ -1451,6 +1453,8 @@ def create_parser(required_true=True):
     parser.add_argument("--video-format", "-vf", type=str, default="mp4", choices=["mp4", "mkv", "avi"],
                         help="video container format")
     parser.add_argument("--video-codec", "-vc", type=str, default=None, help="video codec")
+    parser.add_argument("--video-bitrate", "-vb", type=str, default=None,
+                        help="video bitrate. number, optionally followed by k/m/g/K/M/G")
 
     parser.add_argument("--metadata", type=str, nargs="?", default=None, const="filename", choices=["filename"],
                         help="Add metadata")

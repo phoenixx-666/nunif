@@ -225,11 +225,39 @@ class FixedFPSFilter():
             return None
 
 
+def parse_bitrate(bitrate_str):
+    if bitrate_str is None:
+        return None
+
+    m = re.match(r'^(\d+(\.\d+)?)([kmgKMG])?$', bitrate_str)
+    if not m:
+        return None
+
+    multiplier = m.group(3)
+    if multiplier == 'k':
+        multiplier = 1000
+    elif multiplier == 'm':
+        multiplier = 1000 * 1000
+    elif multiplier == 'g':
+        multiplier = 1000 * 1000 * 1000
+    elif multiplier == 'K':
+        multiplier = 1024
+    elif multiplier == 'M':
+        multiplier = 1024 * 1024
+    elif multiplier == 'G':
+        multiplier = 1024 * 1024 * 1024
+    else:
+        multiplier = 1
+
+    return int(float(m.group(1)) * multiplier)
+
+
 class VideoOutputConfig():
     def __init__(self, pix_fmt="yuv420p", fps=30, options={}, container_options={},
                  output_width=None, output_height=None, colorspace=None,
                  container_format=None,
-                 video_codec=None):
+                 video_codec=None,
+                 video_bitrate=None):
         self.pix_fmt = pix_fmt
         self.fps = fps
         self.options = options
@@ -242,6 +270,7 @@ class VideoOutputConfig():
             self.colorspace = "unspecified"
         self.container_format = container_format
         self.video_codec = video_codec
+        self.video_bitrate = video_bitrate
 
         self.state_updated = lambda config: None
         self.state = dict(
@@ -643,6 +672,8 @@ def process_video(input_path, output_path,
             test_callback = frame_callback
         output_size = test_output_size(test_callback, video_input_stream, vf)
 
+    bitrate = parse_bitrate(config.video_bitrate)
+
     video_output_stream = output_container.add_stream(config.video_codec, config.fps)
     configure_colorspace(video_output_stream, video_input_stream, config)
     video_output_stream.thread_type = "AUTO"
@@ -650,6 +681,8 @@ def process_video(input_path, output_path,
     video_output_stream.width = output_size[0]
     video_output_stream.height = output_size[1]
     video_output_stream.options = config.options
+    if bitrate is not None:
+        video_output_stream.codec_context.bit_rate = bitrate
     rgb24_options = config.state["rgb24_options"]
     reformatter = config.state["reformatter"]
 
@@ -758,6 +791,8 @@ def generate_video(output_path,
         config.video_codec = get_default_video_codec(config.container_format)
     configure_video_codec(config)
 
+    bitrate = parse_bitrate(config.video_bitrate)
+
     video_output_stream = output_container.add_stream(config.video_codec, convert_known_fps(config.fps))
     configure_colorspace(video_output_stream, None, config)
     video_output_stream.thread_type = "AUTO"
@@ -765,6 +800,8 @@ def generate_video(output_path,
     video_output_stream.width = output_size[0]
     video_output_stream.height = output_size[1]
     video_output_stream.options = config.options
+    if bitrate is not None:
+        video_output_stream.codec_context.bit_rate = bitrate
     reformatter = config.state["reformatter"]
 
     if audio_file is not None:
